@@ -11,7 +11,7 @@ crypto materials: trying the easiest cracking techniques against the crypto
 items found in the wild.
 
 Broadly speaking this project generates a feed of crypto materials identified as
-borked.
+borked, or being low hanging fruits for an attacker.
 
 # Subjects
 
@@ -21,8 +21,8 @@ We are interested in the use of RSA and ECDSA in TLS, GPG, SSH, and OpenVPN.
 
 The project will acquire crypto materials from:
 
-* [AIL]() clearnet/darknet crawlings,
-* D4 through [d4-fingerprinting-passivessl]() collections,
+* [AIL](https://github.com/CIRCL/ail) clearnet/darknet crawlings,
+* D4 through [sensor-d4-tls-fingerprinting](https://github.com/D4-project/sensor-d4-tls-fingerprinting) collections,
 * a ReST API.
 * existing databases of broken keys (eg. CVE-2008-0166)
 
@@ -39,4 +39,4 @@ Some of these techniques and others are already implemented in
 # Dissemination
 
 Outputs (means of identifying cracked keys and along with their solutions) will
-be exposed through a ReST API, and [MISP](https://www.misp-project.org/) events.
+be exposed through a ReST API, and [MISP](https://www.misp-project.org/) feeds.
