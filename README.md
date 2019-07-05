@@ -21,7 +21,7 @@ We are interested in the use of RSA and ECDSA in TLS, GPG, SSH, and OpenVPN.
 
 The project will acquire crypto materials from:
 
-* [AIL](https://github.com/CIRCL/ail) clearnet/darknet crawlings,
+* [AIL](https://github.com/CIRCL/AIL-framework) clearnet/darknet crawlings,
 * D4 through [sensor-d4-tls-fingerprinting](https://github.com/D4-project/sensor-d4-tls-fingerprinting) collections,
 * a ReST API.
 * existing databases of broken keys (eg. CVE-2008-0166)
