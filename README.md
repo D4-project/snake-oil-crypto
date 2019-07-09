@@ -40,3 +40,21 @@ Some of these techniques and others are already implemented in
 
 Outputs (means of identifying cracked keys and along with their solutions) will
 be exposed through a ReST API, and [MISP](https://www.misp-project.org/) feeds.
+
+# Requirements
+
+* Debian derivative, tested under Ubuntu 18.04
+* python 3.7 (Use virtualenv!)
+* SageMath 8.8 compiled for python 3
+
+# Install and config
+
+* Use ./install.sh to install in a virtualenv
+* Modify config.conf for configuration
+
+# Use
+Preliminary (fastgcd from file and DB) use with:
+```shell
+$sage
+sage:load('snake-oil-crypto.py')
+```
