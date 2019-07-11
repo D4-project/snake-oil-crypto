@@ -24,7 +24,6 @@ def __getattr__(name):
                 f"module {__name__!r} has no attribute {name!r}"
             ) from None
 
-
 def __dir__():
     """List available attacks"""
     _import_attacks()

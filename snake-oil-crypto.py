@@ -1,28 +1,28 @@
+from redis import Redis
+from rq import Queue
 import datastores
 import attacks
 
 
 def main():
-    testChallenge()
-    testDB()
+    redis_conn = Redis()
+    q = Queue(connection=redis_conn)
+    testChallenge(q)
+    # testDB(q)
 
-def testChallenge():
-     # quick test
-    print("Matching keys in Challenge file:")
+
+def testChallenge(queue):
     r = datastores.TextFile()
     a = attacks.Tsage()
-    res = a.process(r.moduli)
-    match = [x for x in zip(r.moduli, res) if x[1] != 1]
-    print("Matching keys in TextFile: {0}".format(len(match)))
-    print(match)
+    res = queue.enqueue(a.process, r.moduli)
+    queue.enqueue(a.report, res.id, depends_on=res)
 
-
-def testDB():
+def testDB(queue):
     pg = datastores.PostGres()
     r = pg.getRSA()
     a = attacks.Tsage()
-    res = a.process(r)
-    match = [x for x in zip(r, res) if x[1] != 1]
+    res = queue.enqueue(a.process, r.moduli)
+    match = [x for x in zip(r, res.return_value) if x[1] != 1]
     print("Matching keys in DB: {0}".format(len(match)))
     print(match)
 
