@@ -1,4 +1,4 @@
-# snake-oil-project
+# snake-oil-crypto
 
 [Snake-oil](https://philzimmermann.com/EN/essays/SnakeOil.html) crypto is a term
 coined by Phil Zimmermann in 1991 original PGP user guide that designates bad
