@@ -1,4 +1,4 @@
-#!/usr/bin/env sage python
+#!/usr/bin/env sage -python
 from . import register_attack
 from . import Attack
 from rq import Queue, Connection
@@ -6,7 +6,7 @@ from redis import Redis
 from sage.all import *
 
 @register_attack
-class Tsage(Attack):
+class BatchGCD(Attack):
     def process(self, X):
         return self.batchgcd_faster(X)
 
