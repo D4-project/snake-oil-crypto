@@ -4,8 +4,8 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import select
 from sqlalchemy import MetaData
 from sqlalchemy import Table
+from sqlalchemy.sql import and_, or_, not_
 from configparser import ConfigParser
-import numpy as np
 from sage.all import *
 
 
@@ -70,6 +70,18 @@ class PostGres(DataStore):
             for r in rows:
                 l.append(r['modulus'])
             result = [ZZ(i) for i in l]
+            rows.close()
+        except (Exception) as error:
+            print(error)
+
+        return result
+
+    def getRSAModulus(self, hash):
+        """ query an RSA Public Keys' modulus from its hash """
+        try:
+            s = select([self.pkTable.c.modulus]).where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.hash == hash))
+            rows = self.conn.execute(s)
+            result = ZZ(rows.fetchone()[0])
             rows.close()
         except (Exception) as error:
             print(error)
