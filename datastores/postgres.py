@@ -58,13 +58,17 @@ class PostGres(DataStore):
 
         return rows
 
-    def getRSAModuli(self, off=0, lim=0):
+    def getRSAModuli(self, off=0, lim=0, maxSize = 0):
         """ query RSA Public Keys' moduli between cursors """
         try:
             if (off == 0) and (lim == 0):
                 s = select([self.pkTable.c.modulus]).where(self.pkTable.c.type == 'RSA')
+                if maxSize > 0:
+                    s = select([self.pkTable.c.modulus]).where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8))
             else:
                 s = select([self.pkTable.c.modulus], offset = off, limit = lim).where(self.pkTable.c.type == 'RSA')
+                if maxSize > 0:
+                    s = select([self.pkTable.c.modulus], offset = off, limit = lim).where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8))
             rows = self.conn.execute(s)
             l = []
             for r in rows:
@@ -83,7 +87,6 @@ class PostGres(DataStore):
             rows = self.conn.execute(s)
             result = ZZ(rows.fetchone()[0])
             rows.close()
+            return result
         except (Exception) as error:
             print(error)
-
-        return result
