@@ -53,8 +53,8 @@ be exposed through a ReST API, and [MISP](https://www.misp-project.org/) feeds.
 * Modify config.conf for configuration
 
 # Use
-Preliminary (fastgcd from file and DB) use with:
+
 ```shell
-$sage
-sage:load('snake-oil-crypto.py')
+$ sage --python ./sage-8.8/local/bin/rq worker
+$ sage --python ./snake-oil-crypto.py
 ```
