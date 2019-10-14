@@ -9,7 +9,7 @@ from sage.all import *
 class Ecma(Attack):
     def process(self, X):
         f = ECM()
-        return(sorted(f.find_factor(X, None, 2000)[0]))
+        return(sorted(f.find_factor(X, None, 2000)))
 
     def report(self, processid):
         with Connection(Redis()):
