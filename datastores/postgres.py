@@ -2,11 +2,16 @@ from . import register_datastore
 from . import DataStore
 from sqlalchemy import engine_from_config
 from sqlalchemy import select
+from sqlalchemy import join
 from sqlalchemy import MetaData
 from sqlalchemy import Table
 from sqlalchemy.sql import and_, or_, not_
+from sqlalchemy import update
 from configparser import ConfigParser
+from rq import Queue, Connection
+from redis import Redis
 from sage.all import *
+import pdb
 
 
 @register_datastore
@@ -39,13 +44,16 @@ class PostGres(DataStore):
             self.conn = engine_from_config(params, prefix='sqlalchemy.')
             self.meta = MetaData(self.conn)
             self.pkTable = Table('public_key', self.meta, autoload=True)
-          
+            self.certTable = Table('certificate', self.meta, autoload=True)
+            self.pkcLink = Table('many_certificate_has_many_public_key', self.meta, autoload=True)
+
         except (Exception) as error:
             print(error)
 
     def disconnect(self):
         if self.conn is not None:
-            self.conn.close()
+            self.conn.dispose()
+            self.conn = None
         print('Database connection closed.')
 
     def getRSA(self, off=0, lim=0):
@@ -55,7 +63,7 @@ class PostGres(DataStore):
             rows = self.conn.execute(s)
         except (Exception) as error:
             print(error)
-
+        self.disconnect()
         return rows
 
     def getRSAModuli(self, off=0, lim=0, maxSize = 0):
@@ -75,6 +83,34 @@ class PostGres(DataStore):
                 l.append(r['modulus'])
             result = [ZZ(i) for i in l]
             rows.close()
+            self.disconnect()
+        except (Exception) as error:
+            print(error)
+
+        return result
+
+    def getRSAModuliBySubject(self, off=0, lim=0, maxSize = 0, subject = None):
+        """ query RSA Public Keys' moduli between cursors for a subject """
+        s = select([self.pkTable.c.modulus])
+        s = s.select_from(join(self.pkTable, self.pkcLink, self.pkcLink.c.hash_public_key == self.pkTable.c.hash).join(self.certTable, self.certTable.c.hash == self.pkcLink.c.hash_certificate))
+
+        try:
+            if (off == 0) and (lim == 0):
+                s = s.where(and_(self.pkTable.c.type == 'RSA', self.certTable.c.subject.contains(subject)))
+                if maxSize > 0:
+                    s = s.where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8, self.certTable.c.subject.contains(subject)))
+            else:
+                # TODO
+                s = select([self.pkTable.c.modulus], offset = off, limit = lim).select_from(i).select_from(j).where(and_(self.pkTable.c.type == 'RSA', self.certTable.c.subject.contains(subject)))
+                if maxSize > 0:
+                    s = select([self.pkTable.c.modulus], offset = off, limit = lim).select_from(i).select_from(j).where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8, self.certTable.c.subject.contains(subject)))
+            rows = self.conn.execute(s)
+            l = []
+            for r in rows:
+                l.append(r['modulus'])
+            result = [ZZ(i) for i in l]
+            rows.close()
+            self.disconnect()
         except (Exception) as error:
             print(error)
 
@@ -87,6 +123,56 @@ class PostGres(DataStore):
             rows = self.conn.execute(s)
             result = ZZ(rows.fetchone()[0])
             rows.close()
+            self.disconnect()
             return result
         except (Exception) as error:
             print(error)
+
+    def getRSAHash(self, modulus):
+        """ query an RSA hash from its modulus """
+        try:
+            s = select([self.pkTable.c.hash]).where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus == modulus))
+            rows = self.conn.execute(s)
+            result = ZZ(rows.fetchone()[0])
+            rows.close()
+            self.disconnect()
+            return result
+        except (Exception) as error:
+            print(error)
+
+    def getRSAHashes(self, moduli):
+        """ query an array of tuple RSA, hash from a list of moduli """
+        try:
+            s = select([self.pkTable.c.hash]).where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus == modulus))
+            rows = self.conn.execute(s)
+            result = ZZ(rows.fetchone()[0])
+            rows.close()
+            self.disconnect()
+            return result
+        except (Exception) as error:
+            print(error)
+
+
+    def setRSAPrime(self, match):
+        """ set a prime number once recovered """
+        up = update(self.pkTable).where(self.pkTable.c.modulus==str(match[0])).values(P=str(match[1]))
+        self.conn.execute(up)
+
+    def pushResults(self, processid):
+        """ push computation results into the datastore """
+        with Connection(Redis()):
+            q = Queue()
+            res = q.fetch_job(processid)
+            if res.return_value != None:
+                self.connect()
+                for match in res.return_value:
+                    try:
+                        self.setRSAPrime(match)
+                    except (Exception) as error:
+                        print(error)
+                self.disconnect()
+                return true
+            else:
+                return false
+
+
