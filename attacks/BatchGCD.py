@@ -14,9 +14,12 @@ class BatchGCD(Attack):
         with Connection(Redis()):
             q = Queue()
             res = q.fetch_job(processid)
-            match = [x for x in zip(res.args[0], res.return_value) if x[1] != 1]
-            print("Matching keys in TextFile: {0}".format(len(match)))
+            # TODO investigate coprimes
+            match = [x for x in zip(res.args[0], res.return_value) if x[1] != 1 and x[0] != x[1]]
+            # print("From Reporting")
             print(match)
+            print("Matching keys in TextFile: {0}".format(len(match)))
+            return match
 
     def batchgcd_faster(self, X):
         prods = self.producttree(X)
