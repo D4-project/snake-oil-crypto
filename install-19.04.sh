@@ -13,4 +13,4 @@ pushd sage-8.8
 make configure
 ./configure --with-python=3
 make -j8 build
-sage -pip install redis rq psycopg2
+sage -pip install redis rq psycopg2 factordb-pycli
