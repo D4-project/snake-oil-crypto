@@ -7,6 +7,11 @@ from sage.all import *
 
 @register_attack
 class Ecma(Attack):
+    """ relays to sage-math ECM function"""
+
+    def __init__(self):
+        self.name = 'sage math ECM'
+
     def process(self, X):
         f = ECM()
         return(sorted(f.find_factor(X, None, 2000)))

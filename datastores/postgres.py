@@ -18,11 +18,21 @@ import pdb
 class PostGres(DataStore):
     def __init__(self):
         self.name = "default datastore: D4 passiveSSL PSQL backend"
+        # read connection parameters
+        self.params = self.config()
+
+    def __enter__(self):
         self.connect()
+        return self
+
+    def __exit__(self ,exc_type, exc_value, tb):
+        self.disconnect()
+        if exc_type is not None:
+            return False
+        return True
 
     def config(self, filename='config.conf', section='sqlalchemy'):
         parser = ConfigParser()
-        # read config file
         parser.read(filename)
         db = {}
         if parser.has_section(section):
@@ -35,13 +45,10 @@ class PostGres(DataStore):
 
     def connect(self):
         """ Connect to the PostgreSQL database server """
-        self.conn = None
         try:
-            # read connection parameters
-            params = self.config()
             # connect to the PostgreSQL server
             print('Connecting to the PostgreSQL database...')
-            self.conn = engine_from_config(params, prefix='sqlalchemy.')
+            self.conn = engine_from_config(self.params, prefix='sqlalchemy.')
             self.meta = MetaData(self.conn)
             self.pkTable = Table('public_key', self.meta, autoload=True)
             self.certTable = Table('certificate', self.meta, autoload=True)
@@ -63,7 +70,6 @@ class PostGres(DataStore):
             rows = self.conn.execute(s)
         except (Exception) as error:
             print(error)
-        self.disconnect()
         return rows
 
     def getRSAModuli(self, off=0, lim=0, maxSize = 0):
@@ -83,7 +89,6 @@ class PostGres(DataStore):
                 l.append(r['modulus'])
             result = [ZZ(i) for i in l]
             rows.close()
-            self.disconnect()
         except (Exception) as error:
             print(error)
 
@@ -110,7 +115,6 @@ class PostGres(DataStore):
                 l.append(r['modulus'])
             result = [ZZ(i) for i in l]
             rows.close()
-            self.disconnect()
         except (Exception) as error:
             print(error)
 
@@ -123,7 +127,6 @@ class PostGres(DataStore):
             rows = self.conn.execute(s)
             result = ZZ(rows.fetchone()[0])
             rows.close()
-            self.disconnect()
             return result
         except (Exception) as error:
             print(error)
@@ -135,7 +138,6 @@ class PostGres(DataStore):
             rows = self.conn.execute(s)
             result = ZZ(rows.fetchone()[0])
             rows.close()
-            self.disconnect()
             return result
         except (Exception) as error:
             print(error)
@@ -147,7 +149,6 @@ class PostGres(DataStore):
             rows = self.conn.execute(s)
             result = ZZ(rows.fetchone()[0])
             rows.close()
-            self.disconnect()
             return result
         except (Exception) as error:
             print(error)
@@ -170,7 +171,6 @@ class PostGres(DataStore):
                         self.setRSAPrime(match)
                     except (Exception) as error:
                         print(error)
-                self.disconnect()
                 return true
             else:
                 return false

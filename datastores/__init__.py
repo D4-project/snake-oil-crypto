@@ -1,15 +1,14 @@
+from contextlib import ContextDecorator
 from importlib import import_module
 from importlib import resources
 
 DATASTORES = dict()
-
 
 def register_datastore(func):
     """Decorator to register attacks"""
     name = func.__name__
     DATASTORES[name] = func
     return func
-
 
 def __getattr__(name):
     """Return a named datastore"""
@@ -24,12 +23,10 @@ def __getattr__(name):
                 f"module {__name__!r} has no attribute {name!r}"
             ) from None
 
-
 def __dir__():
     """List available datastores"""
     _import_datastores()
     return list(DATASTORES.keys())
-
 
 def _import_datastores():
     """Import all resources to register datastores"""
@@ -37,7 +34,17 @@ def _import_datastores():
         if name.endswith(".py"):
             import_module(f"{__name__}.{name[:-3]}")
 
-
-class DataStore:
+class DataStore(ContextDecorator):
+# class DataStore:
+    """" Datastores can be used as decorators of as contexts. """
     def __init__(self):
-        self.name = "default datastore."
+        self.name = "default datastore"
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self ,exc_type, exc_value, tb):
+        self.disconnect()
+        if exc_type is not None:
+            return False
+        return True

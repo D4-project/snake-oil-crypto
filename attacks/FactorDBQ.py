@@ -8,12 +8,17 @@ from sage.all import *
 
 @register_attack
 class FactorDBQ(Attack):
+    """ Queries FactorDB """
+
+    def __init__(self):
+        self.name = 'FactorDB query'
+
     def process(self, X):
         try:
             f = FactorDB(X)
             f.connect()
             if f.get_status() in ['FF', 'CF']:
-                return int(f.get_factor_list()[0])
+                return sage.Integer(f.get_factor_list()[0])
         except ImportError:
             return None
 
