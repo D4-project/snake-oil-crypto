@@ -3,13 +3,11 @@ from importlib import resources
 
 ATTACKS = dict()
 
-
 def register_attack(func):
     """Decorator to register attacks"""
     name = func.__name__
     ATTACKS[name] = func
     return func
-
 
 def __getattr__(name):
     """Return a named attacks"""
@@ -38,6 +36,7 @@ def _import_attacks():
 
 
 class Attack:
+    # def __init__(self):
     def __init__(self):
         self.name = "default attack"
 

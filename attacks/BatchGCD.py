@@ -5,7 +5,6 @@ import datastores
 from rq import Queue, Connection
 from redis import Redis
 from sage.all import *
-import pdb
 
 @register_attack
 class BatchGCD(Attack):
