@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy import join
 from sqlalchemy import MetaData
 from sqlalchemy import Table
-from sqlalchemy.sql import and_, or_, not_
+from sqlalchemy.sql import and_, or_, not_, desc, asc
 from sqlalchemy import update
 from configparser import ConfigParser
 from rq import Queue, Connection
@@ -72,17 +72,20 @@ class PostGres(DataStore):
             print(error)
         return rows
 
-    def getRSAModuli(self, off=0, lim=0, maxSize = 0):
+    def getRSAModuli(self, off=0, lim=0, order='desc', maxSize = 0):
         """ query RSA Public Keys' moduli between cursors """
+
+        if (off == 0) and (lim == 0):
+            s = select([self.pkTable.c.modulus])
+        else:
+            s = select([self.pkTable.c.modulus], offset = off, limit = lim)
+
         try:
-            if (off == 0) and (lim == 0):
-                s = select([self.pkTable.c.modulus]).where(self.pkTable.c.type == 'RSA')
-                if maxSize > 0:
-                    s = select([self.pkTable.c.modulus]).where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8))
-            else:
-                s = select([self.pkTable.c.modulus], offset = off, limit = lim).where(self.pkTable.c.type == 'RSA')
-                if maxSize > 0:
-                    s = select([self.pkTable.c.modulus], offset = off, limit = lim).where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8))
+            s = s.where(self.pkTable.c.type == 'RSA')
+            if maxSize > 0:
+                s = s.where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize / 8))
+
+            s = (s.order_by(desc(self.pkTable.c.modulus)), s.order_by(asc(self.pkTable.c.modulus)))[order == 'asc']
             rows = self.conn.execute(s)
             l = []
             for r in rows:
@@ -94,21 +97,21 @@ class PostGres(DataStore):
 
         return result
 
-    def getRSAModuliBySubject(self, off=0, lim=0, maxSize = 0, subject = None):
+    def getRSAModuliBySubject(self, off=0, lim=0, maxSize = 0, order='desc', subject = None):
         """ query RSA Public Keys' moduli between cursors for a subject """
-        s = select([self.pkTable.c.modulus])
+
+        if (off == 0) and (lim == 0):
+            s = select([self.pkTable.c.modulus])
+        else:
+            s = select([self.pkTable.c.modulus], offset = off, limit = lim)
+
         s = s.select_from(join(self.pkTable, self.pkcLink, self.pkcLink.c.hash_public_key == self.pkTable.c.hash).join(self.certTable, self.certTable.c.hash == self.pkcLink.c.hash_certificate))
 
         try:
-            if (off == 0) and (lim == 0):
-                s = s.where(and_(self.pkTable.c.type == 'RSA', self.certTable.c.subject.contains(subject)))
-                if maxSize > 0:
-                    s = s.where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8, self.certTable.c.subject.contains(subject)))
-            else:
-                # TODO
-                s = select([self.pkTable.c.modulus], offset = off, limit = lim).select_from(i).select_from(j).where(and_(self.pkTable.c.type == 'RSA', self.certTable.c.subject.contains(subject)))
-                if maxSize > 0:
-                    s = select([self.pkTable.c.modulus], offset = off, limit = lim).select_from(i).select_from(j).where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8, self.certTable.c.subject.contains(subject)))
+            s = s.where(and_(self.pkTable.c.type == 'RSA', self.certTable.c.subject.contains(subject)))
+            if maxSize > 0:
+                s = s.where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8, self.certTable.c.subject.contains(subject)))
+            s = (s.order_by(desc(self.pkTable.c.modulus)), s.order_by(asc(self.pkTable.c.modulus)))[order == 'asc']
             rows = self.conn.execute(s)
             l = []
             for r in rows:
