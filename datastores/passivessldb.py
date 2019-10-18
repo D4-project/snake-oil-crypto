@@ -15,9 +15,9 @@ import pdb
 
 
 @register_datastore
-class PostGres(DataStore):
+class PassivesslDB(DataStore):
     def __init__(self):
-        self.name = "default datastore: D4 passiveSSL PSQL backend"
+        self.name = "default datastore: D4 passiveSSL sqlalchemy backend"
         # read connection parameters
         self.params = self.config()
 
@@ -44,11 +44,12 @@ class PostGres(DataStore):
         return db
 
     def connect(self):
-        """ Connect to the PostgreSQL database server """
+        """ Connect to the database server """
         try:
             # connect to the PostgreSQL server
             print('Connecting to the PostgreSQL database...')
             self.conn = engine_from_config(self.params, prefix='sqlalchemy.')
+            # self.conn = engine_from_config(self.params, prefix='sqlalchemy.', echo = True)
             self.meta = MetaData(self.conn)
             self.pkTable = Table('public_key', self.meta, autoload=True)
             self.certTable = Table('certificate', self.meta, autoload=True)
@@ -74,19 +75,17 @@ class PostGres(DataStore):
 
     def getRSAModuli(self, off=0, lim=0, order='desc', maxSize = 0, distinct = False):
         """ query RSA Public Keys' moduli between cursors """
-
-        if (off == 0) and (lim == 0):
-            s = select([self.pkTable.c.modulus])
-        else:
-            s = select([self.pkTable.c.modulus], offset = off, limit = lim)
+        s = (select([self.pkTable.c.modulus]), select([self.pkTable.c.modulus]).distinct(self.pkTable.c.modulus))[distinct]
 
         try:
             s = s.where(self.pkTable.c.type == 'RSA')
             if maxSize > 0:
                 s = s.where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize / 8))
-
             s = (s.order_by(desc(self.pkTable.c.modulus)), s.order_by(asc(self.pkTable.c.modulus)))[order == 'asc']
-            s = (s, s.distinct(self.pkTable.c.modulus))[distinct]
+            s = s.offset(off)
+            if lim > 0:
+                s = s.limit(lim)
+
             rows = self.conn.execute(s)
             l = []
             for r in rows:
@@ -101,11 +100,7 @@ class PostGres(DataStore):
     def getRSAModuliBySubject(self, off=0, lim=0, maxSize = 0, order='desc', subject = None, distinct = False):
         """ query RSA Public Keys' moduli between cursors for a subject """
 
-        if (off == 0) and (lim == 0):
-            s = select([self.pkTable.c.modulus])
-        else:
-            s = select([self.pkTable.c.modulus], offset = off, limit = lim)
-
+        s = (select([self.pkTable.c.modulus]), select([self.pkTable.c.modulus]).distinct(self.pkTable.c.modulus))[distinct]
         s = s.select_from(join(self.pkTable, self.pkcLink, self.pkcLink.c.hash_public_key == self.pkTable.c.hash).join(self.certTable, self.certTable.c.hash == self.pkcLink.c.hash_certificate))
 
         try:
@@ -113,7 +108,10 @@ class PostGres(DataStore):
             if maxSize > 0:
                 s = s.where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8, self.certTable.c.subject.contains(subject)))
             s = (s.order_by(desc(self.pkTable.c.modulus)), s.order_by(asc(self.pkTable.c.modulus)))[order == 'asc']
-            s = (s, s.distinct(self.pkTable.c.modulus))[distinct]
+            s = s.offset(off)
+            if lim > 0:
+                s = s.limit(lim)
+
             rows = self.conn.execute(s)
             l = []
             for r in rows:
