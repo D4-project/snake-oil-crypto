@@ -72,7 +72,7 @@ class PostGres(DataStore):
             print(error)
         return rows
 
-    def getRSAModuli(self, off=0, lim=0, order='desc', maxSize = 0):
+    def getRSAModuli(self, off=0, lim=0, order='desc', maxSize = 0, distinct = False):
         """ query RSA Public Keys' moduli between cursors """
 
         if (off == 0) and (lim == 0):
@@ -86,6 +86,7 @@ class PostGres(DataStore):
                 s = s.where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize / 8))
 
             s = (s.order_by(desc(self.pkTable.c.modulus)), s.order_by(asc(self.pkTable.c.modulus)))[order == 'asc']
+            s = (s, s.distinct(self.pkTable.c.modulus))[distinct]
             rows = self.conn.execute(s)
             l = []
             for r in rows:
@@ -97,7 +98,7 @@ class PostGres(DataStore):
 
         return result
 
-    def getRSAModuliBySubject(self, off=0, lim=0, maxSize = 0, order='desc', subject = None):
+    def getRSAModuliBySubject(self, off=0, lim=0, maxSize = 0, order='desc', subject = None, distinct = False):
         """ query RSA Public Keys' moduli between cursors for a subject """
 
         if (off == 0) and (lim == 0):
@@ -112,6 +113,7 @@ class PostGres(DataStore):
             if maxSize > 0:
                 s = s.where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8, self.certTable.c.subject.contains(subject)))
             s = (s.order_by(desc(self.pkTable.c.modulus)), s.order_by(asc(self.pkTable.c.modulus)))[order == 'asc']
+            s = (s, s.distinct(self.pkTable.c.modulus))[distinct]
             rows = self.conn.execute(s)
             l = []
             for r in rows:
