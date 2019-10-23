@@ -1,1 +1,2 @@
 /analyzers/*.conf
+/exporters/*.conf
