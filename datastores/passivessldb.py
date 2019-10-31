@@ -1,5 +1,6 @@
 from . import register_datastore
 from . import DataStore
+import datetime
 from sqlalchemy import engine_from_config
 from sqlalchemy import select
 from sqlalchemy import join
@@ -159,7 +160,8 @@ class PassivesslDB(DataStore):
 
     def setRSAPrime(self, match):
         """ set a prime number once recovered """
-        up = update(self.pkTable).where(self.pkTable.c.modulus==str(match[0])).values(P=str(match[1]))
+        # up = update(self.pkTable).where(self.pkTable.c.modulus==str(match[0])).values(P=str(match[1]), misp=True, published=datetime.datetime.now())
+        up = update(self.pkTable).where(self.pkTable.c.modulus==str(match[0])).values(P=str(match[1]), misp=True)
         self.conn.execute(up)
 
     def pushResults(self, processid):
@@ -178,4 +180,8 @@ class PassivesslDB(DataStore):
             else:
                 return false
 
+    def setPublished(self, match):
+        """ touch published date after publishing """
+        up = update(self.pkTable).where(and_(self.pkTable.c.modulus==str(match[0]), self.pkTable.c.modulus==True)).values(published=datetime.datetime.now())
+        self.conn.execute(up)
 
