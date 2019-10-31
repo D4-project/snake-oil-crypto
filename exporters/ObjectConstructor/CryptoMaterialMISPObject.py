@@ -8,12 +8,10 @@ from pymisp.tools.abstractgenerator import AbstractMISPObjectGenerator
 class CryptoMaterialMISPObject(AbstractMISPObjectGenerator):
     def __init__(self, dico_val, **kargs):
         self._dico_val = dico_val
-        self.name = "Crypto Material"
 
         #  Enforce attribute date with timestamp
-        super(CryptoMaterialMISPObject, self).__init__('Crypto Material',
-                                                       default_attributes_parameters={'timestamp': int(time.time())},
-                                                       **kargs)
+        super(CryptoMaterialMISPObject, self).__init__('crypto-material', default_attributes_parameters={'timestamp': int(time.time())}, **kargs)
+        self.name = "crypto-material"
         self.generate_attributes()
 
     def generate_attributes(self):

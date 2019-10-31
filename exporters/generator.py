@@ -11,6 +11,11 @@ import pdb
 
 from pymisp import MISPEvent
 
+# could be imported dynamically
+from exporters.ObjectConstructor.CryptoMaterialMISPObject import CryptoMaterialMISPObject
+from pymisp.tools import GenericObjectGenerator
+
+
 def get_system_templates():
     """Fetch all MISP-Object template present on the local system.
 
@@ -53,7 +58,7 @@ class FeedGenerator:
         self.tag = tags
         self.confp = settings
         self.sys_templates = get_system_templates()
-        self.constructor_dict = settings['CONSTRUCTOR_DICT']
+        self.constructor_dict = dict(settings._sections['CONSTRUCTOR_DICT'])
 
         self.flushing_interval = int(settings['FEEDGENERATOR']['FLUSHING_INTERVAL'])
         self.flushing_next = time.time() + self.flushing_interval
@@ -87,16 +92,16 @@ class FeedGenerator:
         """Add an object to the daily event"""
         self.update_daily_event_id()
         if obj_name not in self.sys_templates:
-            pdb.set_trace()
             print('Unkown object template')
             return False
 
         #  Get MISP object constructor
         obj_constr = self.constructor_dict.get(obj_name, None)
+        obj_constr = globals()[obj_constr]
         #  Constructor not known, using the generic one
         if obj_constr is None:
             obj_constr = self.constructor_dict.get('generic')
-            misp_object = obj_constr(obj_name)
+            misp_object = globals()[obj_constr]
             #  Fill generic object
             for k, v in data.items():
                 # attribute is not in the object template definition
@@ -150,7 +155,7 @@ class FeedGenerator:
         self.create_daily_event()
 
     def flush_event(self, new_event=None):
-        print('Writting event on disk'+' '*50)
+        print('Writting event on disk' + ' ' * 50)
         if new_event is not None:
             event_uuid = new_event['uuid']
             event = new_event
@@ -158,8 +163,9 @@ class FeedGenerator:
             event_uuid = self.current_event_uuid
             event = self.current_event
 
-        eventFile = open(os.path.join(self.confp['FEEDGENERATOR']['OUTPUT'], event_uuid+'.json'), 'w')
-        eventFile.write(event.to_json())
+        eventFile = open(os.path.join(self.confp['FEEDGENERATOR']['OUTPUT'], event_uuid + '.json'), 'w')
+        eventSupport = "{{\"Event\": {}}}".format(event.to_json())
+        eventFile.write(eventSupport)
         eventFile.close()
 
         self.save_hashes()
@@ -183,7 +189,7 @@ class FeedGenerator:
                 hashFile.write('{},{}\n'.format(element[0], element[1]))
             hashFile.close()
             self.attributeHashes = []
-            print('Hash saved' + ' '*30)
+            print('Hash saved' + ' ' * 30)
         except Exception as e:
             print(e)
             sys.exit('Could not create the quick hash lookup file.')
@@ -195,14 +201,14 @@ class FeedGenerator:
             tags.append({'name': eventTag['Tag']['name'],
                          'colour': eventTag['Tag']['colour']})
         return {
-                'Orgc': event_dict.get('Orgc', []),
-                'Tag': tags,
-                'info': event_dict['info'],
-                'date': event_dict['date'],
-                'analysis': event_dict['analysis'],
-                'threat_level_id': event_dict['threat_level_id'],
-                'timestamp': event_dict.get('timestamp', int(time.time()))
-               }
+            'Orgc': event_dict.get('Orgc', []),
+            'Tag': tags,
+            'info': event_dict['info'],
+            'date': event_dict['date'],
+            'analysis': event_dict['analysis'],
+            'threat_level_id': event_dict['threat_level_id'],
+            'timestamp': event_dict.get('timestamp', int(time.time()))
+        }
 
     def get_last_event_from_manifest(self):
         """Retreive last event from the manifest.
@@ -253,7 +259,7 @@ class FeedGenerator:
         today = str(datetime.date.today())
         event_dict = {
             'uuid': new_uuid,
-            'id': len(self.manifest)+1,
+            'id': len(self.manifest) + 1,
             'Tag': self.tag,
             'info': self.daily_event_name.format(today),
             'analysis': self.confp['FEEDGENERATOR']['ANALYSIS'],  # [0-2]
