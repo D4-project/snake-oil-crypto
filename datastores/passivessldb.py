@@ -104,9 +104,9 @@ class PassivesslDB(DataStore):
         s = s.select_from(join(self.pkTable, self.pkcLink, self.pkcLink.c.hash_public_key == self.pkTable.c.hash).join(self.certTable, self.certTable.c.hash == self.pkcLink.c.hash_certificate))
 
         try:
-            s = s.where(and_(self.pkTable.c.type == 'RSA', self.certTable.c.subject.contains(subject)))
+            s = s.where(and_(self.pkTable.c.type == 'RSA', self.certTable.c.subject.ilike("%{}%".format(subject))))
             if maxSize > 0:
-                s = s.where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8, self.certTable.c.subject.contains(subject)))
+                s = s.where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8, self.certTable.c.subject.ilike("%{}%".format(subject))))
             s = (s.order_by(desc(self.pkTable.c.modulus)), s.order_by(asc(self.pkTable.c.modulus)))[order == 'asc']
             s = s.offset(off)
             if lim > 0:
