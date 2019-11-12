@@ -10,8 +10,8 @@ if [$? = 1]; then
        	exit 1
 fi
 sudo apt-get install build-essential m4 dpkg-dev
-tar -xvf sage-8.8.tar.gz
-pushd sage-8.8
+tar -xvf sage-8.9.tar.gz
+pushd sage-8.9
 make configure
 ./configure --with-python=3
 make build
