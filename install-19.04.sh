@@ -1,8 +1,10 @@
 #!/bin/bash
-sudo apt-get install -y python3 redis-server
+set -e
+set -u
+sudo apt-get install -y python3 redis-server postgresql postgresql-server-dev-all
 sudo systemctl enable redis-server.service
 sudo systemctl restart redis-server.service
-wget http://www-ftp.lip6.fr/pub/math/sagemath/src/sage-8.8.tar.gz
+wget http://www-ftp.lip6.fr/pub/math/sagemath/src/sage-8.9.tar.gz
 md5sum -c sagesum.txt
 if [$? = 1]; then
        	exit 1
@@ -12,5 +14,6 @@ tar -xvf sage-8.8.tar.gz
 pushd sage-8.8
 make configure
 ./configure --with-python=3
-make -j8 build
+make build
+sudo -ln -sr sage /usr/local/bin/sage 
 sage -pip install redis rq psycopg2 factordb-pycli
