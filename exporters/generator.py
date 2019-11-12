@@ -13,6 +13,7 @@ from pymisp import MISPEvent
 
 # could be imported dynamically
 from exporters.ObjectConstructor.CryptoMaterialMISPObject import CryptoMaterialMISPObject
+from exporters.ObjectConstructor.x509MISPObject import x509MISPObject
 from pymisp.tools import GenericObjectGenerator
 
 
@@ -49,9 +50,9 @@ class FeedGenerator:
     Configuration taken from the file settings.py"""
 
     def __init__(self, settings, tags):
-        """This object can be use to easily create a daily MISP-feed.
+        """This object can be use to easily create a MISP-feed of events.
 
-        It handles the event creation, manifest file and cache file
+        It handles the events creation, manifest file and cache file
         (hashes.csv).
 
         """
@@ -60,6 +61,7 @@ class FeedGenerator:
         self.sys_templates = get_system_templates()
         self.constructor_dict = dict(settings._sections['CONSTRUCTOR_DICT'])
 
+        # TODO remove periodic flushing
         self.flushing_interval = int(settings['FEEDGENERATOR']['FLUSHING_INTERVAL'])
         self.flushing_next = time.time() + self.flushing_interval
 
@@ -88,7 +90,7 @@ class FeedGenerator:
         self._after_addition()
         return True
 
-    def add_object_to_event(self, obj_name, **data):
+    def add_object_to_event(self, obj_name, relationship=None, **data):
         """Add an object to the daily event"""
         self.update_daily_event_id()
         if obj_name not in self.sys_templates:
@@ -114,12 +116,15 @@ class FeedGenerator:
         else:
             misp_object = obj_constr(data)
 
+        if relationship is not None:
+            misp_object.add_reference(relationship['uuid'], relationship['type'])
+
         self.current_event.add_object(misp_object)
         for attr_type, attr_value in data.items():
             self._add_hash(attr_type, attr_value)
 
         self._after_addition()
-        return True
+        return misp_object.uuid
 
     def _after_addition(self):
         """Write event on disk"""
