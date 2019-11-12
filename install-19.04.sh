@@ -5,7 +5,7 @@ sudo apt-get install -y python3 redis-server postgresql postgresql-server-dev-al
 sudo systemctl enable redis-server.service
 sudo systemctl restart redis-server.service
 wget http://www-ftp.lip6.fr/pub/math/sagemath/src/sage-8.9.tar.gz
-md5sum -c sagesum.txt
+md5sum -c sagesum8.9.txt
 if [$? = 1]; then
        	exit 1
 fi
