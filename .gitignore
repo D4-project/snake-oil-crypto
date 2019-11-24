@@ -1,1 +1,3 @@
 /analyzers/*.conf
+/exporters/*.conf
+*/__pycache__/*

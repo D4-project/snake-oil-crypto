@@ -1,5 +1,7 @@
 from . import register_datastore
 from . import DataStore
+import datetime
+from datetime import date
 from sqlalchemy import engine_from_config
 from sqlalchemy import select
 from sqlalchemy import join
@@ -159,8 +161,8 @@ class PassivesslDB(DataStore):
 
     def setRSAPrime(self, match):
         """ set a prime number once recovered """
-        up = update(self.pkTable).where(self.pkTable.c.modulus==str(match[0])).values(P=str(match[1]))
-        self.conn.execute(up)
+        set = update(self.pkTable).where(self.pkTable.c.modulus==str(match[0])).values(P=str(match[1]), misp=True)
+        self.conn.execute(set)
 
     def pushResults(self, processid):
         """ push computation results into the datastore """
@@ -178,4 +180,63 @@ class PassivesslDB(DataStore):
             else:
                 return false
 
+    def getUnpublishedKeys(self, since = date.today()):
+        """
+        Returns keys that have not been published to MISP yet
+        """
+        s = select([self.pkTable.c.hash,
+                    self.pkTable.c.modulus,
+                    self.pkTable.c.modulus_size,
+                    self.pkTable.c.P,
+                    self.pkTable.c.Q,
+                    self.pkTable.c.exponent,
+                    self.pkTable.c.type,
+                    ])
+            # since timestamp, only support RSA ATM
+        s = s.where(
+            and_(
+                self.pkTable.c.type == 'RSA',
+                self.pkTable.c.P != None,
+                or_(
+                    self.pkTable.c.misp != True,
+                    self.pkTable.c.misp == None),
+                or_(
+                    self.pkTable.c.published >= since,
+                    self.pkTable.c.published == None),
+                ))
+
+        try:
+            rows = self.conn.execute(s)
+            res = rows.fetchall()
+            rows.close()
+        except (Exception) as error:
+            print(error)
+
+        return res
+
+    def getCertificatesForKey(self, keyHash):
+        """
+        Returns certificates using a key as array of dictionary
+        """
+        s = select([
+                    self.certTable.c.hash,
+                    self.certTable.c.subject,
+                    self.certTable.c.issuer
+                    ])
+        s = s.select_from(join(self.pkTable, self.pkcLink, self.pkcLink.c.hash_public_key == self.pkTable.c.hash).join(self.certTable, self.certTable.c.hash == self.pkcLink.c.hash_certificate))
+        s = s.where(self.pkTable.c.hash == keyHash)
+
+        try:
+            rows = self.conn.execute(s)
+            res = rows.fetchall()
+            rows.close()
+        except (Exception) as error:
+            print(error)
+
+        return res
+
+    def setPublished(self, match):
+        """ touch published date after publishing """
+        set = update(self.pkTable).where(and_(self.pkTable.c.modulus==str(match[0]), self.pkTable.c.modulus==True)).values(published=datetime.datetime.now())
+        self.conn.execute(set)
 
