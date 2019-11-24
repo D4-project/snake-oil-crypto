@@ -58,6 +58,7 @@ class FeedGenerator:
         """
         self.tag = tags
         self.confp = settings
+        self.daily = bool(settings['FEEDGENERATOR']['DAILY'])
         self.sys_templates = get_system_templates()
         self.constructor_dict = dict(settings._sections['CONSTRUCTOR_DICT'])
 
@@ -69,6 +70,7 @@ class FeedGenerator:
         self.attributeHashes = []
 
         self.daily_event_name = settings['FEEDGENERATOR']['DAILY_EVENT_NAME'] + ' {}'
+        self.event_name = settings['FEEDGENERATOR']['EVENT_NAME'] + ' {}'
         event_date_str, self.current_event_uuid, self.event_name = self.get_last_event_from_manifest()
         temp = [int(x) for x in event_date_str.split('-')]
         self.current_event_date = datetime.date(temp[0], temp[1], temp[2])
@@ -78,13 +80,15 @@ class FeedGenerator:
         """Add a sighting on an attribute.
 
         Not supported for the moment."""
-        self.update_daily_event_id()
+        if self.daily:
+            self.update_daily_event_id()
         self._after_addition()
         return False
 
     def add_attribute_to_event(self, attr_type, attr_value, **attr_data):
         """Add an attribute to the daily event"""
-        self.update_daily_event_id()
+        if self.daily:
+            self.update_daily_event_id()
         self.current_event.add_attribute(attr_type, attr_value, **attr_data)
         self._add_hash(attr_type, attr_value)
         self._after_addition()
@@ -92,7 +96,8 @@ class FeedGenerator:
 
     def add_object_to_event(self, obj_name, relationship=None, **data):
         """Add an object to the daily event"""
-        self.update_daily_event_id()
+        if self.daily:
+            self.update_daily_event_id()
         if obj_name not in self.sys_templates:
             print('Unkown object template')
             return False
@@ -123,7 +128,8 @@ class FeedGenerator:
         for attr_type, attr_value in data.items():
             self._add_hash(attr_type, attr_value)
 
-        self._after_addition()
+        if self.daily:
+            self._after_addition()
         return misp_object.uuid
 
     def _after_addition(self):
@@ -157,7 +163,10 @@ class FeedGenerator:
         with open(os.path.join(self.confp['FEEDGENERATOR']['OUTPUT'], 'manifest.json'), 'w'):
             pass
         # create new event and save manifest
-        self.create_daily_event()
+        if self.daily:
+            self.create_daily_event()
+        else:
+            self.create_event()
 
     def flush_event(self, new_event=None):
         print('Writting event on disk' + ' ' * 50)
@@ -287,3 +296,34 @@ class FeedGenerator:
         self.manifest[event['uuid']] = self._addEventToManifest(event)
         self.save_manifest()
         return event
+
+    def create_event(self, h):
+        new_uuid = gen_uuid()
+        today = str(datetime.date.today())
+        event_dict = {
+            'uuid': new_uuid,
+            'id': len(self.manifest) + 1,
+            'Tag': self.tag,
+            'info': self.event_name.format(h),
+            'analysis': self.confp['FEEDGENERATOR']['ANALYSIS'],  # [0-2]
+            'threat_level_id': self.confp['FEEDGENERATOR']['THREAT_LEVEL_ID'],  # [1-4]
+            'published': self.confp['FEEDGENERATOR']['PUBLISHED'],
+            'date': today
+        }
+        self.current_event = MISPEvent()
+        self.current_event.from_dict(**event_dict)
+
+        # reference org
+        org_dict = {}
+        org_dict['name'] = self.confp['FEEDGENERATOR']['ORG_NAME']
+        org_dict['uuid'] = self.confp['FEEDGENERATOR']['ORG_UUID']
+        self.current_event['Orgc'] = org_dict
+        # TODO
+        return self.current_event
+
+    def save_event(self):
+        # save event on disk
+        self.flush_event(new_event=self.current_event)
+        # add event to manifest
+        self.manifest[self.current_event['uuid']] = self._addEventToManifest(self.current_event)
+        self.save_manifest()

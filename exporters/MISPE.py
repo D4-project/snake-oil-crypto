@@ -21,7 +21,8 @@ class MISPE(Exporter):
         self.name = 'MISP exporter'
         self.url = self.config['CREDENTIALS']['URL']
         self.key = self.config['CREDENTIALS']['KEY']
-        self.misp = ExpandedPyMISP(self.url, self.key, False)
+        self.ssl = self.config['CREDENTIALS'].getboolean('SSL')
+        self.misp = ExpandedPyMISP(self.url, self.key, self.ssl)
         tags = [
             {
                 "colour": "#ffffff",
@@ -32,6 +33,7 @@ class MISPE(Exporter):
                 "name": "d4-crypto-feed"
             }
         ]
+        self.daily = self.config['FEEDGENERATOR'].getboolean('DAILY')
         self.generator = FeedGenerator(self.config, tags)
         self.misp.toggle_global_pythonify()
         #  Depending on the type of source
@@ -58,6 +60,8 @@ class MISPE(Exporter):
         with self.source:
             ls = self.source.getUnpublishedKeys()
             for row in ls:
+                if not self.daily:
+                    self.generator.create_event("")
                 cm = {
                     'p': str(row['P']),
                     'q': str(row['Q']),
@@ -77,22 +81,20 @@ class MISPE(Exporter):
                         'subject': cert['subject'],
                         'issuer': cert['issuer'],
                     }
+                    # Create the relationship
                     relationship = {}
                     relationship['uuid'] = k_uuid
                     relationship['type'] = 'uses'
                     c_uuid = self.generator.add_object_to_event("x509", relationship, **x509cert)
                     print(c_uuid)
-                    # Create the relationship
+                    self.generator.save_event()
 
-        self.generator.update_daily_event_id()
-        self.generator.flush_event()
+        if self.daily:
+            self.generator.update_daily_event_id()
+            self.generator.flush_event()
 
     def processFile(self):
         print("Export textfile results")
 
     def processAttack(self):
         print("Export attack results")
-
-
-
-# self.source.name > batchGCD attack
