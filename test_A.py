@@ -9,8 +9,8 @@ def setup():
     redis_conn = Redis()
     # redis_conn = Redis('127.0.0.1', 6789, password='secret')
     q = Queue(connection=redis_conn)
-    #test_searchGCDFromModulus(q)
-    test_searchGCDFromIP(q)
+    test_searchGCDFromModulus(q)
+    #test_searchGCDFromIP(q)
     # test_postgres_bysize(q)
 
 def test_batchGCD(queue):
