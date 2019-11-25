@@ -62,12 +62,11 @@ class RSABuilder(Builder):
 
     def _fromPandQ(self):
         self.phi_n = (self.p-1)*(self.q-1)
-        # self.d = inverse_mod(self.e, self.phi_n)
-        self.d = inverse_mod(self.phi_n, self.e)
+        self.d = inverse_mod(self.e, self.phi_n)
         dmp1 = rsa.rsa_crt_dmp1(self.d, self.p)
         dmq1 = rsa.rsa_crt_dmq1(self.d, self.q)
         iqmp = rsa.rsa_crt_iqmp(self.p, self.q)
-        pn = rsa.RSAPublicNumbers(self.e, self.n)
+        pn = rsa.RSAPublicNumbers(int(self.e), int(self.n))
         compositen = rsa.RSAPrivateNumbers(int(self.p), int(self.q), int(self.d), int(dmp1), int(dmq1), int(iqmp), pn)
         compositek = compositen.private_key(backend=default_backend())
         self.pem = compositek.private_bytes(
@@ -76,10 +75,12 @@ class RSABuilder(Builder):
                 encryption_algorithm=serialization.NoEncryption()
                 )
 
-
     # def _fromD(self):
 
     def _writeKeyToFile(self):
-        f = open(self.folder+self.h+".pem", "wb+")
+        path = self.folder+self.h+".pem"
+        print("Writing key to file {}".format(path))
+        f = open(path, "wb+")
         f.write(self.pem)
         f.close()
+        print("Done.")

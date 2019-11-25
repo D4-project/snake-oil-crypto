@@ -10,7 +10,7 @@ import hashlib
 @register_attack
 class SearchGCD(Attack):
 
-    def __init__(self, datastore, modulus):
+    def __init__(self, datastore, modulus = None):
         self.name = 'SearchGCD attack - search of a great common denominator on insertion'
         self.modulus = modulus
         self.ds = datastore

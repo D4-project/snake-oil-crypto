@@ -56,6 +56,8 @@ class PassivesslDB(DataStore):
             self.pkTable = Table('public_key', self.meta, autoload=True)
             self.certTable = Table('certificate', self.meta, autoload=True)
             self.pkcLink = Table('many_certificate_has_many_public_key', self.meta, autoload=True)
+            self.sessionTable = Table('sessionRecord', self.meta, autoload=True)
+            self.srcLink = Table('many_sessionRecord_has_many_certificate', self.meta, autoload=True)
 
         except (Exception) as error:
             print(error)
@@ -124,6 +126,64 @@ class PassivesslDB(DataStore):
             print(error)
 
         return result
+
+    def getRSAModuliByIP(self, off=0, lim=0, maxSize = 0, order='desc', srcIP = None, dstIP = None, distinct = False):
+        """ query RSA Public Keys' moduli between cursors for a an IP """
+        # TODO use sqlalchemy, with psql dialect
+        # s = (select([self.pkTable.c.modulus]), select([self.pkTable.c.modulus]).distinct(self.pkTable.c.modulus))[distinct]
+        # s = s.select_from(
+            # join(self.certTable, self.certTable.c.hash == self.srcLink.c.hash_certificate)
+            # join(self.sessionTable, self.srcLink, self.srcLink.c.id_sessionRecord == self.sessionTable.c.id)
+            # join(self.pkTable, self.pkcLink, self.pkcLink.c.hash_public_key == self.pkTable.c.hash)
+            # .join(self.certTable, self.certTable.c.hash == self.pkcLink.c.hash_certificate)
+        # )
+
+        rawQuery = 'SELECT DISTINCT public_key.modulus ' \
+           'FROM public_key ' \
+           'JOIN many_certificate_has_many_public_key ON many_certificate_has_many_public_key.hash_public_key = public_key.hash ' \
+           'JOIN certificate ON certificate.hash = many_certificate_has_many_public_key.hash_certificate ' \
+           'JOIN public."many_sessionRecord_has_many_certificate" ON certificate.hash = public."many_sessionRecord_has_many_certificate".hash_certificate ' \
+           'JOIN "sessionRecord" ON  "sessionRecord".id = "many_sessionRecord_has_many_certificate"."id_sessionRecord" '
+# WHERE "sessionRecord"."dst_ip" = inet '60.243.245.99';
+
+        try:
+
+            if srcIP is not None and dstIP is not None:
+                # TODO
+                print("dst + src not implemented.")
+                # s = s.where(and_(self.pkTable.c.type == 'RSA', self.sessionTable.c.src_ip.ilike("%{}%".format(srcIP)), self.sessionTable.c.dst_ip.ilike("%{}%".format(dstIP))))
+            if srcIP is not None:
+                target =  srcIP
+                what =  '"src_ip"'
+                # s = s.where(and_(self.pkTable.c.type == 'RSA', self.sessionTable.c.src_ip.ilike("%{}%".format(srcIP))))
+            elif dstIP is not None:
+                target =  dstIP
+                what =  '"dst_ip"'
+                # s = s.where(and_(self.pkTable.c.type == 'RSA', self.sessionTable.c.dst_ip.ilike("%{}%".format(dstIP))))
+
+            rawQuery = '{} {}{} {} {};'.format(rawQuery, 'WHERE "sessionRecord".', what, '= inet', "'"+target+"'")
+
+            # if maxSize > 0:
+            #     s = s.where(and_(self.pkTable.c.type == 'RSA', self.pkTable.c.modulus_size < maxSize/8, self.certTable.c.subject.ilike("%{}%".format(subject))))
+            # s = (s.order_by(desc(self.pkTable.c.modulus)), s.order_by(asc(self.pkTable.c.modulus)))[order == 'asc']
+            # s = s.offset(off)
+            # if lim > 0:
+            #     s = s.limit(lim)
+
+            # rows = self.conn.execute(s)
+            rows = self.conn.execute(rawQuery)
+            l = []
+            for r in rows:
+                l.append(r['modulus'])
+            result = [ZZ(i) for i in l]
+            rows.close()
+        except (Exception) as error:
+            print(error)
+
+        return result
+
+        return False
+
 
     def getRSAModulus(self, hash):
         """ query an RSA Public Keys' modulus from its hash """
