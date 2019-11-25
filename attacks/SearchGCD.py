@@ -36,8 +36,12 @@ class SearchGCD(Attack):
         with Connection(Redis()):
             q = Queue()
             res = q.fetch_job(processid)
+            r = {}
+            r['success'] = res.return_value[0]
+            r['n'] = res.return_value[1]
             if res.return_value[0] == False:
                 print("\033[92m{0}\nhas no known common divisor in DB. \033[0m".format(res.return_value[1]))
-                return True
-            print("\033[31m{0}\nis common divisor of \n{1}. \033[0m".format(res.return_value[2], res.return_value[1]))
-            return False
+            else:
+                print("\033[31m{0}\nis common divisor of \n{1}. \033[0m".format(res.return_value[2], res.return_value[1]))
+                r['p'] = res.return_value[2]
+            return r
