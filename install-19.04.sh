@@ -16,4 +16,4 @@ make configure
 ./configure --with-python=3
 make build
 sudo ln -sr sage /usr/local/bin/sage 
-sage -pip install redis rq psycopg2 factordb-pycli sqlachemy git+git://github.com/MISP/PyMISP
+sage -pip install redis cryptography rq psycopg2 factordb-pycli sqlachemy git+git://github.com/MISP/PyMISP
