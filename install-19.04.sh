@@ -2,7 +2,6 @@
 set -e
 set -u
 export SAGE_FAT_BINARY=yes
-export CFLAGS="--with-pic"
 sudo apt-get install -y python3 redis-server postgresql postgresql-server-dev-all
 sudo systemctl enable redis-server.service
 sudo systemctl restart redis-server.service
@@ -15,7 +14,7 @@ sudo apt-get install build-essential m4 dpkg-dev
 tar -xvf sage-8.9.tar.gz
 pushd sage-8.9
 make configure
-./configure --with-python=3
-make  build
+./configure --with-python=3 --with-pic
+make -j4  build
 sudo ln -sr sage /usr/local/bin/sage 
 sage -pip install redis cryptography rq psycopg2 factordb-pycli sqlachemy git+git://github.com/MISP/PyMISP
