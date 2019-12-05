@@ -2,6 +2,7 @@
 set -e
 set -u
 export SAGE_FAT_BINARY=yes
+export CFLAGS="--with-pic"
 sudo apt-get install -y python3 redis-server postgresql postgresql-server-dev-all
 sudo systemctl enable redis-server.service
 sudo systemctl restart redis-server.service
