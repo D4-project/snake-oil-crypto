@@ -12,9 +12,10 @@ SCREEN_NAME="Snake_Oil_Crypto_Window"
 
 cd ${DASH_HOME}
 
-if [ -e "${DIR}/sage-8.9/local/bin/python" ]; then
+#if [ -e "${DIR}/sage-8.9/local/bin/python" ]; then
+if [ -e "${DIR}/SageMath/local/bin/python3" ]; then
 	echo "Sage virtualenv seems to exist."
-	ENV_LAUNCH="sage --python3 ${DIR}/sage-8.9/local/bin/rq worker"
+	ENV_LAUNCH="sage --python3 ${DIR}/SageMath/local/bin/rq worker"
 else
 	echo "Please make sure you have a sage environment installed, exiting."
 	exit 1
