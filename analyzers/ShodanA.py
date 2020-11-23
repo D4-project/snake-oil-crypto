@@ -12,8 +12,8 @@ class ShodanA(Analyzer):
     def queryCertificate(self, X):
         self.api = Shodan(self.config['CREDENTIALS']['KEY'])
         for borked in X:
-            results = self.api.search('ssl:'+'"'+borked[]+'"')
-            # results = self.api.search('ssl:'+'"'+borked+'"')
+            # results = self.api.search('ssl:'+'"'+ borked[] +'"')
+            results = self.api.search('ssl:'+'"'+borked+'"')
             print(results)
 
     # def subscribe(self):

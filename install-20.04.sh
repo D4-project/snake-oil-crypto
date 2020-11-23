@@ -12,4 +12,4 @@ if [$? = 1]; then
 fi
 tar -xvf sage-9.2-Ubuntu_20.04-x86_64.tar.bz2
 sudo ln -sr SageMath/sage /usr/local/bin/sage 
-sage -pip install redis cryptography rq psycopg2 factordb-pycli SQLAlchemy git+git://github.com/MISP/PyMISP
+sage -pip install redis cryptography rq psycopg2 factordb-pycli SQLAlchemy git+git://github.com/MISP/PyMISP tornado shodan
