@@ -13,15 +13,13 @@ from configparser import ConfigParser
 from rq import Queue, Connection
 from redis import Redis
 from sage.all import *
-import pdb
 
 
 @register_datastore
 class PassivesslDB(DataStore):
     def __init__(self):
+        super().__init__()
         self.name = "default datastore: D4 passiveSSL sqlalchemy backend"
-        # read connection parameters
-        self.params = self.config()
 
     def __enter__(self):
         self.connect()
@@ -33,25 +31,13 @@ class PassivesslDB(DataStore):
             return False
         return True
 
-    def config(self, filename='config.conf', section='sqlalchemy'):
-        parser = ConfigParser()
-        parser.read(filename)
-        db = {}
-        if parser.has_section(section):
-            params = parser.items(section)
-            for param in params:
-                db[param[0]] = param[1]
-        else:
-            raise Exception('Section {0} not found in the {1} file'.format(section, filename))
-        return db
-
     def connect(self):
         """ Connect to the database server """
         try:
             # connect to the PostgreSQL server
             print('Connecting to the PostgreSQL database...')
-            self.conn = engine_from_config(self.params, prefix='sqlalchemy.')
-            # self.conn = engine_from_config(self.params, prefix='sqlalchemy.', echo = True)
+            # self.conn = engine_from_config(self.config, prefix='sqlalchemy.')
+            self.conn = engine_from_config(self.config['sqlalchemy'], prefix='sqlalchemy.')
             self.meta = MetaData(self.conn)
             self.pkTable = Table('public_key', self.meta, autoload=True)
             self.certTable = Table('certificate', self.meta, autoload=True)
@@ -60,7 +46,7 @@ class PassivesslDB(DataStore):
             self.srcLink = Table('many_sessionRecord_has_many_certificate', self.meta, autoload=True)
 
         except (Exception) as error:
-            print(error)
+            print('Error: {}'.format(error))
 
     def disconnect(self):
         if self.conn is not None:

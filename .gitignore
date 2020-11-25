@@ -1,4 +1,6 @@
 /analyzers/*.conf
 /exporters/*.conf
 /builders/*.conf
+/datastores/*.conf
+config.conf
 */__pycache__/*

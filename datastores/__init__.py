@@ -1,6 +1,7 @@
 from contextlib import ContextDecorator
 from importlib import import_module
 from importlib import resources
+import configparser
 
 DATASTORES = dict()
 
@@ -38,7 +39,12 @@ class DataStore(ContextDecorator):
 # class DataStore:
     """" Datastores can be used as decorators of as contexts. """
     def __init__(self):
+        """ Parse Config files """
         self.name = "default datastore"
+        for name in resources.contents(__name__):
+            if name == type(self).__name__ + ".conf":
+                self.config = configparser.ConfigParser()
+                self.config.read('datastores/'+name)
 
     def __enter__(self):
         return self
