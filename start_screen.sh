@@ -15,7 +15,7 @@ cd ${DASH_HOME}
 #if [ -e "${DIR}/sage-8.9/local/bin/python" ]; then
 if [ -e "${DIR}/SageMath/local/bin/python3" ]; then
 	echo "Sage virtualenv seems to exist."
-	ENV_LAUNCH="sage --python3 ${DIR}/SageMath/local/bin/rq worker"
+	ENV_LAUNCH="sage --python3 ${DIR}/SageMath/local/bin/rq worker default ssh-fingerprint"
 else
 	echo "Please make sure you have a sage environment installed, exiting."
 	exit 1

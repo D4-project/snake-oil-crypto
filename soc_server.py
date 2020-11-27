@@ -1,5 +1,7 @@
 from redis import Redis
 from rq import Queue
+from rq.job import Job
+from rq.exceptions import NoSuchJobError
 
 import datastores
 import attacks
@@ -82,17 +84,38 @@ class AttackBySSHFingerprint(JSONHandler):
     # GET should bring in the results
     # TODO switch GET and POST
     async def get(self,q):
-        # Query PSSH to get the key material
-        pssh = datastores.PassiveSSH()
-        # Against PSSL
-        pssl = datastores.PassivesslDB()
-        response = await pssh.GetByFingerprint(q)
-        j = json.loads(response)
-        modulus = j['crypto_material']['modulus']
-        a = SearchGCD(pssl, ZZ(modulus))
-        re1 = queue.enqueue(a.process, args=[a.ds.getRSAModuliBySubject, {'subject': 'Huawei'}], job_timeout=15000)
-        match = queue.enqueue(a.report, re1.id, depends_on=re1, job_timeout=15000)
-        self.write("Job Submitted")
+        # First check whether there is an existing job for this request
+        # exceptions drives my logic flow because I :love: python /s
+        try:
+            job = Job.fetch("{}".format(q), connection=redis_conn)
+            result = {}
+            result['status'] = job.get_status()
+            if res := job.result:
+                if len(res) == 3:
+                    result['success'] = true
+                    result['modulus'] = "{}".format(res[1])
+                    result['divisor'] = "{}".format(res[2])
+            else:
+                result['success'] = false
+            self.write(json.dumps(result))
+        except NoSuchJobError:
+            jobttl = 20
+            # Query PSSH to get the key material
+            pssh = datastores.PassiveSSH()
+            # Against PSSL
+            pssl = datastores.PassivesslDB()
+            response = await pssh.GetByFingerprint(q)
+            j = json.loads(response)
+            modulus = j['crypto_material']['modulus']
+            # dlink router
+            # modulus = 127720680654041728988985021844570374903129750412991740869975622165089966135003475385309906950769680678872760535596422216617941097583542103453771389228244387590996637297307783781075096418281063367358534118134965144898414681177759402415323202118081569413921873174724188498911880892541949556552524435767369304297
+            a = SearchGCD(pssl, ZZ(modulus))
+            # TODO make TTL configurable
+            #  re1 = qsshf.enqueue(a.process, args=[a.ds.getRSAModuli, {'off': 0, 'lim':500000, 'maxSize': 4096, 'order': 'asc'}], job_timeout=15000, result_ttl = -1)
+            re1 = qsshf.enqueue(a.process,
+                                args=[a.ds.getRSAModuli, {'off': 0, 'lim': 500000, 'maxSize': 4096, 'order': 'asc'}],
+                                job_timeout=15000, result_ttl=jobttl, job_id="{}".format(q))
+            self.write(json.dumps({'submitted': True, 'jobid': re1.id, 'ttl':jobttl}))
 
     # POST should launch the attack
 
@@ -123,11 +146,13 @@ def make_app():
     return application
 
 if __name__ == "__main__":
+    # TODO use the config file for redis connection and jobttl
+
     # Init plugins
     initPlugins()
     # SnakeOil redis connection
     redis_conn = Redis()
-    queue = Queue(connection=redis_conn)
+    qsshf= Queue(name="ssh-fingerprint",connection=redis_conn)
 
     # Tornado web server
     app = make_app()
