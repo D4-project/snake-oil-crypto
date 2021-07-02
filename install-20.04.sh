@@ -1,11 +1,11 @@
 #!/bin/bash
-#set -e
-#set -u
-#sudo apt-get install -y python3 redis-server postgresql postgresql-server-dev-all
-#sudo ln -s /usr/bin/python3 /usr/bin/python
-#sudo systemctl enable redis-server.service
-#sudo systemctl restart redis-server.service
-#wget http://www-ftp.lip6.fr/pub/math/sagemath/linux/64bit/sage-9.3-Ubuntu_20.04-x86_64.tar.bz2
+set -e
+set -u
+sudo apt-get install -y python3 redis-server postgresql postgresql-server-dev-all
+sudo ln -s /usr/bin/python3 /usr/bin/python
+sudo systemctl enable redis-server.service
+sudo systemctl restart redis-server.service
+wget http://www-ftp.lip6.fr/pub/math/sagemath/linux/64bit/sage-9.3-Ubuntu_20.04-x86_64.tar.bz2
 md5sum -c sagesum9.3.txt
 if [$? = 1]; then
        	exit 1
