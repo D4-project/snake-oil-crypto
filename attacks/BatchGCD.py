@@ -29,16 +29,19 @@ class BatchGCD(Attack):
         with Connection(Redis()):
             q = Queue()
             res = q.fetch_job(processid)
-            # TODO investigate coprimes, what is the effec of sharing p AND q
-            match = [x for x in zip(res.return_value[0], res.return_value[1]) if x[1] != 1 and x[0] != x[1]]
-            # match = [x for x in zip(res.return_value[0], res.return_value[1]) if x[1] != 1]
-            #  TODO move this code to an export to csv file method
-            # if len(match) > 1:
-            #     with open('output_text2/'+processid, 'w+') as rf:
-            #         for line in match:
-            #             rf.write("{0},{1}\n".format(line[0], line[1]))
-            print("\033[93m Factorized keys: {0} out of {1} \033[0m".format(len(match), format(len(res.return_value[0]))))
-            return match
+            if res.is_failed or res is None:
+                return
+            else:
+                # TODO investigate coprimes, what is the effec of sharing p AND q
+                match = [x for x in zip(res.return_value[0], res.return_value[1]) if x[1] != 1 and x[0] != x[1]]
+                match_text = [x for x in zip(res.return_value[0], res.return_value[1]) if x[1] != 1]
+                #  TODO move this code to an export to csv file method
+                if len(match) > 1:
+                    with open('output_ssh/'+processid, 'w+') as rf:
+                        for line in match_text:
+                            rf.write("{0},{1}\n".format(line[0], line[1]))
+                print("\033[93m Factorized keys: {0} out of {1} \033[0m".format(len(match), format(len(res.return_value[0]))))
+                return match
 
     def batchgcd_faster(self, X):
         prods = self.producttree(X)

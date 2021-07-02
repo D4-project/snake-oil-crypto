@@ -6,10 +6,18 @@ import pdb
 
 @register_datastore
 class TextFile(DataStore):
-    def __init__(self):
+    def __init__(self, dtfile, dtformat):
         self.name = "Text file datastore: reads RSA moduli from CR separated text file"
         # read textfile parameters
-        self.filename = self.config()
+        self.params = self.config()
+        if dtfile is None:
+            self.filename = self.params['path']
+        else:
+            self.filename = dtfile
+        if dtformat is None:
+            self.numberformat = self.params['numberformat']
+        else:
+            self.numberformat = dtformat
         print(self.filename)
         if not os.path.exists(self.filename):
             raise Exception('{0} does not exist'.format(self.filename))
@@ -27,19 +35,23 @@ class TextFile(DataStore):
     def config(self, filename='config.conf', section='textfile'):
         parser = ConfigParser()
         parser.read(filename)
-        file = {}
+        db = {}
         if parser.has_section(section):
-            file = parser.items(section)
-            for param in file:
-                return param[1]
+            params = parser.items(section)
+            for param in params:
+                db[param[0]] = param[1]
         else:
             raise Exception('Section {0} not found in the {1} file'.format(section, filename))
+        return db
 
     def read(self):
         try:
             rows = []
             for line in self.openedfile:
-                rows.append(ZZ('0x'+(line.strip())))
+                if self.numberformat == "int":
+                    rows.append(ZZ(line.strip()))
+                else:
+                    rows.append(ZZ('0x'+(line.strip())))
             return rows
         except IOError:
             raise Exception('Could not read {0}.'.format(self.filename))

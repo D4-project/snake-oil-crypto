@@ -38,6 +38,8 @@ sleep 0.1
 if [ "${check_rq_worker}" == "1" ]; then
 	echo -e $GREEN"\t* Launching rq worker"$DEFAULT
 	screen -S ${SCREEN_NAME} -X screen -t "Worker-1" bash -c "${ENV_LAUNCH};"
+	screen -S ${SCREEN_NAME} -X screen -t "Worker-2" bash -c "${ENV_LAUNCH};"
+	screen -S ${SCREEN_NAME} -X screen -t "Worker-3" bash -c "${ENV_LAUNCH};"
 else
 	echo -e $RED"\t* Worker seems to be already running."$DEFAULT
 fi
